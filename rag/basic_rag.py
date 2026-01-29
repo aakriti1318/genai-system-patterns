@@ -80,14 +80,15 @@ class DocumentChunker:
                 metadata={
                     **doc.metadata,
                     "chunk_index": len(chunks),
-                    "total_chunks": -1  # Set after all chunks created
+                    "total_chunks": 0  # Will be set below
                 }
             )
             chunks.append(chunk)
         
-        # Update total chunks
+        # Update total chunks count after all chunks are created
+        total = len(chunks)
         for chunk in chunks:
-            chunk.metadata["total_chunks"] = len(chunks)
+            chunk.metadata["total_chunks"] = total
         
         return chunks
 

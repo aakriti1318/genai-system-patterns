@@ -64,6 +64,12 @@ class InputValidator:
         ]
         
         # Banned content patterns
+        # Production: These are intentionally broad for demonstration
+        # Real systems should use:
+        # 1. Context-aware detection (not just keyword matching)
+        # 2. ML-based content classification
+        # 3. Domain-specific patterns
+        # 4. Configurable per use case
         self.banned_patterns = [
             r"hack",
             r"exploit",
@@ -137,6 +143,8 @@ class InputValidator:
                 return True, f"Potential prompt injection detected: pattern matched"
         
         # Check for excessive special characters (another injection indicator)
+        # Production: This threshold should be tuned for your use case
+        # Consider allowing higher ratios for code, math, or special domains
         special_chars = sum(1 for c in text if not c.isalnum() and not c.isspace())
         if special_chars > len(text) * 0.3:
             return True, "Suspicious character distribution"
@@ -169,11 +177,14 @@ class InputValidator:
         """Sanitize input by removing potentially problematic patterns.
         
         Production: Be careful not to break legitimate inputs.
+        Consider allowing newlines (\n), tabs (\t) if needed for formatting.
+        This implementation removes ALL control characters for security.
         """
         # Remove excessive whitespace
         sanitized = re.sub(r'\s+', ' ', text)
         
-        # Remove control characters
+        # Remove control characters (except common whitespace)
+        # Production: Tune this based on your needs - may want to preserve \n, \t
         sanitized = ''.join(char for char in sanitized if char.isprintable() or char.isspace())
         
         return sanitized.strip()

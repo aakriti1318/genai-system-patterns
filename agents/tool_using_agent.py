@@ -88,7 +88,7 @@ class ToolUsingAgent:
             Dict with final result, execution log, and metrics
         """
         print(f"=== Agent Task: {task} ===\n")
-        self._start_time = time.time()
+        self._start_time = time.monotonic()  # Monotonic for accurate elapsed time
         self._execution_log = []
         self._total_cost = 0.0
         
@@ -129,7 +129,7 @@ class ToolUsingAgent:
                 if execution.result == ToolExecutionResult.FAILURE:
                     print(f"  Error: {execution.error_message}")
         
-        elapsed = time.time() - self._start_time
+        elapsed = time.monotonic() - self._start_time
         
         return {
             "result": result,
@@ -142,7 +142,7 @@ class ToolUsingAgent:
     
     def _check_safety_limits(self, iteration: int) -> bool:
         """Check if safety limits are exceeded."""
-        elapsed = time.time() - self._start_time
+        elapsed = time.monotonic() - self._start_time
         
         if self._total_cost >= self.safety_limits.max_cost_usd:
             print(f"✗ Cost limit exceeded: ${self._total_cost:.2f}")
@@ -178,7 +178,14 @@ class ToolUsingAgent:
         tool_name: str,
         parameters: Dict[str, Any]
     ) -> ToolExecution:
-        """Execute a tool with timeout and error handling."""
+        """Execute a tool with timeout and error handling.
+        
+        Production: Implement actual timeout using:
+        - concurrent.futures.ThreadPoolExecutor with timeout
+        - signal.alarm() on Unix systems
+        - threading.Timer for async timeout
+        This example shows the pattern without actual timeout for simplicity.
+        """
         if tool_name not in self.tools:
             return ToolExecution(
                 tool_name=tool_name,
@@ -237,9 +244,20 @@ def fetch_api(endpoint: str) -> Dict[str, Any]:
 
 
 def calculate(expression: str) -> float:
-    """Perform calculation."""
-    # Unsafe eval - production: use safe math parser
-    return eval(expression)
+    """Perform calculation.
+    
+    WARNING: This is a simplified example. In production, NEVER use eval().
+    Use a safe math parser like ast.literal_eval() or a library like simpleeval.
+    """
+    # For demo purposes only - DO NOT use eval() in production
+    # Production: Use safe alternatives like numexpr or simpleeval
+    try:
+        # Very basic safety check (still not safe!)
+        if any(keyword in expression for keyword in ['import', '__', 'exec', 'eval']):
+            raise ValueError("Invalid expression")
+        return eval(expression)
+    except Exception as e:
+        raise ValueError(f"Invalid calculation: {e}")
 
 
 def main():

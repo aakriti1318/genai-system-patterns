@@ -40,7 +40,14 @@ class EmbeddingCache:
         self._cache[key] = embedding
     
     def _hash_text(self, text: str) -> str:
-        """Create cache key from text."""
+        """Create cache key from text.
+        
+        Uses MD5 for fast hashing. MD5 is acceptable here because:
+        1. This is for cache keys, not cryptographic security
+        2. Collision resistance is sufficient for caching purposes
+        3. Speed matters for cache lookups
+        Production: MD5 is fine for cache keys, but document this choice.
+        """
         return hashlib.md5(text.encode()).hexdigest()
     
     def stats(self) -> Dict[str, float]:
@@ -87,7 +94,8 @@ class EmbeddingManager:
         - Handle token limits (truncate with warning, don't fail silently)
         - Log metrics for cost tracking
         """
-        results = []
+        # Initialize results list with None placeholders
+        results = [None] * len(texts)
         uncached_indices = []
         uncached_texts = []
         
@@ -95,7 +103,7 @@ class EmbeddingManager:
         for i, text in enumerate(texts):
             cached = self.cache.get(text)
             if cached:
-                results.append(cached)
+                results[i] = cached
             else:
                 uncached_indices.append(i)
                 uncached_texts.append(text)
@@ -104,13 +112,10 @@ class EmbeddingManager:
         if uncached_texts:
             embeddings = self._embed_batch(uncached_texts)
             
-            # Cache new embeddings
-            for text, embedding in zip(uncached_texts, embeddings):
+            # Cache new embeddings and insert into results at correct positions
+            for idx, text, embedding in zip(uncached_indices, uncached_texts, embeddings):
                 self.cache.set(text, embedding)
-            
-            # Insert into results at correct positions
-            for idx, embedding in zip(uncached_indices, embeddings):
-                results.insert(idx, embedding)
+                results[idx] = embedding
         
         return results
     

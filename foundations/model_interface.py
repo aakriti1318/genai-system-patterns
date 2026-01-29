@@ -54,7 +54,7 @@ class CircuitBreaker:
         self.failure_threshold = failure_threshold
         self.cooldown_seconds = cooldown_seconds
         self._failures = 0
-        self._last_failure_time = 0.0
+        self._last_failure_time = 0.0  # Use time.monotonic() to avoid clock adjustments
         self._is_open = False
     
     def record_success(self):
@@ -65,7 +65,7 @@ class CircuitBreaker:
     def record_failure(self):
         """Record failed call."""
         self._failures += 1
-        self._last_failure_time = time.time()
+        self._last_failure_time = time.monotonic()  # Monotonic for reliable timing
         
         if self._failures >= self.failure_threshold:
             self._is_open = True
@@ -77,7 +77,7 @@ class CircuitBreaker:
             return True
         
         # Check if cooldown period has passed
-        if time.time() - self._last_failure_time > self.cooldown_seconds:
+        if time.monotonic() - self._last_failure_time > self.cooldown_seconds:
             print("Circuit breaker attempting reset...")
             self._is_open = False
             self._failures = 0

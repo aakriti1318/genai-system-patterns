@@ -118,9 +118,11 @@ class RetrievalMetrics:
         
         When to use: When relevance is graded and ranking quality matters.
         
-        Note: Simplified binary relevance version (relevant=1, not=0).
-        Production: Use graded relevance scores (0-3 or 0-5).
+        Note: Uses standard log2 discounting for accurate NDCG calculation.
+        Production: Use graded relevance scores (0-3 or 0-5) for better evaluation.
         """
+        import math
+        
         ndcgs = []
         
         for query, result in results:
@@ -130,8 +132,8 @@ class RetrievalMetrics:
                 if doc_id in query.relevant_doc_ids:
                     # Binary relevance: rel=1 if relevant, 0 otherwise
                     rel = 1.0
-                    # Discount by position (log base 2)
-                    dcg += rel / (i + 1)  # Simplified: should be log2(i+1)
+                    # Discount by position using standard log2 formula
+                    dcg += rel / math.log2(i + 1)
             
             # Calculate IDCG (Ideal DCG)
             ideal_ranking = sorted(
@@ -142,7 +144,7 @@ class RetrievalMetrics:
             idcg = 0.0
             for i, doc_id in enumerate(ideal_ranking[:k], 1):
                 if doc_id in query.relevant_doc_ids:
-                    idcg += 1.0 / (i + 1)
+                    idcg += 1.0 / math.log2(i + 1)
             
             # Normalize
             if idcg > 0:
